@@ -1,0 +1,23 @@
+{
+  "name": "wifilogger",
+  "version": "1.0.0",
+  "description": "WiFiLogger API for recording Davis Vantage Pro2 weather station events",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fvanwijk/wifilogger.git"
+  },
+  "author": "Frank van Wijk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fvanwijk/wifilogger/issues"
+  },
+  "homepage": "https://github.com/fvanwijk/wifilogger#readme",
+  "dependencies": {
+    "node-fetch": "2.6.0"
+  },
+  "type": "module"
+}

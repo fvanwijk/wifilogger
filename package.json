@@ -2,9 +2,9 @@
   "name": "wifilogger",
   "version": "1.0.0",
   "description": "WiFiLogger API for recording Davis Vantage Pro2 weather station events",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node src/index.js"
   },
   "repository": {
     "type": "git",

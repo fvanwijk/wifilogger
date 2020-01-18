@@ -14,5 +14,4 @@ export async function addObservation(data) {
   } catch (e) {
     console.log(e);
   }
-
 }

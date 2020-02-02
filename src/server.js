@@ -1,18 +1,17 @@
-import express from 'express';
-const app = express();
+const http = require('http');
 const port = 8080;
 
-app.use(express.json());
-app.use((req, res, next) => {
-  console.log('Called API');
-  next();
-});
-
 const log = (req, res) => {
-  console.log(req.body);
+  console.log(req.method, req.body);
   return res.send('WiFiLogger!');
 };
 
-app.all('/', log);
+const server = http.createServer(log);
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+server.listen(port, err => {
+  if (err) {
+    return console.log('Something bad happened', err);
+  }
+
+  console.log(`Example app listening on port ${port}`);
+});

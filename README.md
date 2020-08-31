@@ -23,6 +23,6 @@ Install firebase tooling:
 npm install -g firebase-tooling
 ```
 
-Run `npm run` to see what scripts are available.
+Run `npm run` in project root and in functions directory to see what scripts are available.
 
 Set `GOOGLE_APPLICATION_CREDENTIALS` environment variable to authenticate locally with Google Service Account to Firebase Admin SDK. 

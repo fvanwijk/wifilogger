@@ -7,10 +7,11 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
+    "emulate": "firebase emulators:start --only functions,firestore",
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "8"
+    "node": "10"
   },
   "dependencies": {
     "@google-cloud/logging": "7.1.0",

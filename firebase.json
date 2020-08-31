@@ -1,4 +1,15 @@
 {
+  "emulators": {
+    "functions": {
+      "host": "0.0.0.0"
+    },
+    " firestore": {
+      "host": "0.0.0.0"
+    },
+    "ui": {
+      "host": "0.0.0.0"
+    }
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

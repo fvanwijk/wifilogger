@@ -5,6 +5,7 @@ const port = 8080;
 const host = '0.0.0.0';
 
 const log = (req, res) => {
+  console.log('Endpoint triggered');
   let body = [];
   req
     .on('data', chunk => {

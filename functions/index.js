@@ -150,22 +150,17 @@ app.put('/', async (req, res) => {
 //   });
 // });
 
-// PUT observation to this endpoint and it will be stored in the Observations collection on FireStore
-// Note that authorization is currently disabled, so anyone can call this endpoint and write to the database
-exports.storeObservation = functions.region('europe-west1').https.onRequest(app);
+const recalculateMaxTemperature = async (change, context) => {
+  console.log(context.params.date);
+  const dateString = new Date(context.params.date).toISOString().slice(0, 10);
 
-// Update the collection with max temperatures per day based on single observations
-exports.updateMaxTemperature = functions
-  .region('europe-west1')
-  .firestore.document('observations/{date}')
-  .onWrite(async (change, context) => {
-    const dateString = new Date(context.params.date).toISOString().slice(0, 10);
+  const today = new Date(dateString);
+  const tomorrow = new Date(dateString);
+  tomorrow.setMinutes(59, 59, 999);
+  tomorrow.setHours(23);
 
-    const today = new Date(dateString);
-    const tomorrow = new Date(dateString);
-    tomorrow.setMinutes(59, 59, 999);
-    tomorrow.setHours(23);
-
+  if (change.before.exists) {
+    // Fetch all observations of day and recalculate max
     return admin
       .firestore()
       .collection('observations')
@@ -174,11 +169,42 @@ exports.updateMaxTemperature = functions
       .get()
       .then(querySnapshot => {
         const maxTemperature = Math.max(...querySnapshot.docs.map(documentSnapshot => documentSnapshot.data().tempout));
+        const newDoc = { date: dateString, maxTemperature };
 
-        console.log('Set max temperature', `maxTemperatures/${dateString}`, { date: dateString, maxTemperature });
+        console.log('[Update/Delete] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
         return admin
           .firestore()
           .doc(`maxTemperatures/${dateString}`)
-          .set({ date: dateString, maxTemperature });
+          .set(newDoc);
       });
-  });
+  } else {
+    // Set max to max of current max and new observation
+    return admin
+      .firestore()
+      .doc(`maxTemperatures/${dateString}`)
+      .get()
+      .then(documentSnapshot => {
+        const tempout = change.after.data().tempout;
+        const maxTemperature = documentSnapshot.exists
+          ? Math.max(documentSnapshot.data().maxTemperature, tempout)
+          : tempout;
+        const newDoc = { date: dateString, maxTemperature };
+        console.log('[Create] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
+
+        return admin
+          .firestore()
+          .doc(`maxTemperatures/${dateString}`)
+          .set(newDoc);
+      });
+  }
+};
+
+// PUT observation to this endpoint and it will be stored in the Observations collection on FireStore
+// Note that authorization is currently disabled, so anyone can call this endpoint and write to the database
+exports.storeObservation = functions.region('europe-west1').https.onRequest(app);
+
+// Update the collection with max temperatures per day based on single observations
+exports.updateMaxTemperature = functions
+  .region('europe-west1')
+  .firestore.document('observations/{date}')
+  .onWrite(recalculateMaxTemperature);

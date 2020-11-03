@@ -33,7 +33,6 @@ app.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === 
 app.put('/', async (req, res) => {
   try {
     await addObservation(req.body);
-    console.info('Successfully logged observation to Firestore', new Date(req.body.utctime * 1000).toISOString());
     res.sendStatus(200);
   } catch (e) {
     console.error('Could not store observation (console.error)', e);
@@ -69,7 +68,7 @@ const recalculateMaxTemperature = async (change, context) => {
         const maxTemperature = Math.max(...querySnapshot.docs.map(documentSnapshot => documentSnapshot.data().tempout));
         const newDoc = { date: today, maxTemperature };
 
-        console.log('[Update/Delete] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
+        console.info('[Update/Delete] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
         return admin
           .firestore()
           .doc(`maxTemperatures/${dateString}`)
@@ -88,7 +87,7 @@ const recalculateMaxTemperature = async (change, context) => {
           ? Math.max(documentSnapshot.data().maxTemperature, tempout)
           : tempout;
         const newDoc = { date: today, maxTemperature };
-        console.log('[Create] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
+        console.info('[Create] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
 
         return admin
           .firestore()

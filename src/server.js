@@ -1,3 +1,5 @@
+// Node server that listens for API calls from WifiLogger to insert observations into Firestore
+
 const http = require('http');
 const api = require('../functions/api');
 

@@ -1,3 +1,5 @@
+// Node process that polls WifiLogger (wflexp.json) to insert observations into Firestore
+
 const fetch = require('node-fetch');
 const api = require('../functions/api.js');
 

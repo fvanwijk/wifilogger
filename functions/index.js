@@ -3,22 +3,15 @@ const express = require('express');
 const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const bodyParser = require('body-parser');
+const { addDays, parse, format } = require('date-fns');
 const { Logging } = require('@google-cloud/logging');
+
+const { addObservation } = require('./api');
+const { addTestObservations } = require('./development');
 
 admin.initializeApp({
   credential: admin.credential.applicationDefault()
 });
-
-const db = admin.firestore();
-const observations = db.collection('observations');
-
-function addObservation(data) {
-  if (!data.utctime) {
-    throw new Error('utctime field is empty');
-  }
-  const date = new Date(data.utctime * 1000);
-  return observations.doc(date.toISOString()).set(data);
-}
 
 const METADATA = {
   resource: {
@@ -38,10 +31,9 @@ const app = express();
 app.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
 
 app.put('/', async (req, res) => {
-  console.info('Trying to log observation');
   try {
     await addObservation(req.body);
-    console.info('Successfully logged observation to Firestore');
+    console.info('Successfully logged observation to Firestore', new Date(req.body.utctime * 1000).toISOString());
     res.sendStatus(200);
   } catch (e) {
     console.error('Could not store observation (console.error)', e);
@@ -51,114 +43,20 @@ app.put('/', async (req, res) => {
     res.status(500).send('Something went wrong');
   }
 });
-// Disabled for nw because every can invoke this fn on prod
-// .get('/migrate/:month', async (req, res) => {
-//   const month = req.params.month;
-//   const weather = require(`./weather_2020-${month}.json`);
-//
-//   const data = weather.map(d => {
-//     return {
-//       apmac: '4C:11:AE:6D:D2:11',
-//       bar: d.MeanSeaLevelPressure_InchOfMercury,
-//       // bartr: '0',
-//       // bat: '4.75',
-//       // cdew: '52.8',
-//       // chill: '62',
-//       conlati: d.Latitude * 10,
-//       conlongi: d.Longitude * 10,
-//       dew: d.DewPointTemperature_Fahrenheit,
-//       // etday: '0.000',
-//       // etmon: '0.00',
-//       // etyear: '0.00',
-//       // foreico: '6',
-//       // forrule: '44',
-//       gust: d.WindGust_MilePerHour,
-//       gustdir: d.WindGustDirection,
-//       // heat: '62',
-//       // humin: '37',
-//       humout: d.RelativeHumidity,
-//       ip: '192.168.1.105',
-//       // lastboot: 1598914062,
-//       loctime: +new Date(d.ReportStartDateTime + 2 * 3600) / 1000,
-//       mac: '4C:11:AE:6D:D2:10',
-//       // rain15: '0.00000',
-//       // rain1h: '0.00000',
-//       // rain24: '0.00000',
-//       // raind: '0.00000',
-//       // rainmon: '0.00000',
-//       rainr: d.RainfallAmount_Inch, // was 0.000000
-//       // rainyear: '20.75586',
-//       rssi: -47,
-//       // solar: null,
-//       ssid: 'DinkelWiFi',
-//       stnmod: 16,
-//       stnname: 'DinkelLogger',
-//       // storm: '0.00000',
-//       // sunrt: '6:54',
-//       // sunst: '20:29',
-//       // tempin: '81.1',
-//       tempout: d.DryBulbTemperature_Fahrenheit,
-//       thsw: null,
-//       // trbat: '0',
-//       tzone: 21,
-//       // units: 191,
-//       // uptime: 52044,
-//       utctime: +new Date(d.ReportStartDateTime) / 1000,
-//       // uv: null,
-//       ver: 3.83,
-//       wfllati: -300,
-//       wfllongi: -300,
-//       wflver: '2.25',
-//       wifimod: 0,
-//       // windavg10: '1.1',
-//       // windavg2: '0.4',
-//       winddir: d.WindDirection,
-//       windspd: d.WindSpeed_MilePerHour,
-//       reimported: true
-//     };
-//   });
-//
-//   try {
-//     const promises = data.map(obs => addObservation(obs));
-//     await Promise.all(promises);
-//     res.sendStatus(200);
-//   } catch (e) {
-//     console.log(e);
-//     res.sendStatus(500);
-//   }
-// })
-// .get('/local-backup', async (req, res) => {
-//   const result = {};
-//   observations.get().then(querySnapshot => {
-//     querySnapshot.forEach(doc => {
-//       result[doc.id] = doc.data();
-//     });
-//     const itemCount = Object.keys(result).length;
-//     if (!itemCount) {
-//       console.log('Empty backup. Are you sure prod db is connected?');
-//     } else {
-//       console.log(`Backing up ${itemCount} observations`);
-//     }
-//
-//     fs.writeFile('./backup.json', JSON.stringify(result, null, 2), err => {
-//       if (err) {
-//         res.sendStatus(500);
-//       }
-//       console.log('Backupped in backup.json');
-//       res.sendStatus(200);
-//     });
-//   });
-// });
+
+// Disabled for now because everyone can invoke these functions on prod
+//.get('/migrate/:month', migrateMonth)
+//.get('/local-backup', localBackup);
+
+// exports.addTestObservations = addTestObservations;
 
 const recalculateMaxTemperature = async (change, context) => {
-  console.log(context.params.date);
   const dateString = new Date(context.params.date).toISOString().slice(0, 10);
 
   const today = new Date(dateString);
-  const tomorrow = new Date(dateString);
-  tomorrow.setMinutes(59, 59, 999);
-  tomorrow.setHours(23);
+  const tomorrow = addDays(today, 1);
 
+  // When observation is updated
   if (change.before.exists) {
     // Fetch all observations of day and recalculate max
     return admin
@@ -169,7 +67,7 @@ const recalculateMaxTemperature = async (change, context) => {
       .get()
       .then(querySnapshot => {
         const maxTemperature = Math.max(...querySnapshot.docs.map(documentSnapshot => documentSnapshot.data().tempout));
-        const newDoc = { date: dateString, maxTemperature };
+        const newDoc = { date: today, maxTemperature };
 
         console.log('[Update/Delete] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
         return admin
@@ -177,6 +75,7 @@ const recalculateMaxTemperature = async (change, context) => {
           .doc(`maxTemperatures/${dateString}`)
           .set(newDoc);
       });
+    // New observation
   } else {
     // Set max to max of current max and new observation
     return admin
@@ -188,7 +87,7 @@ const recalculateMaxTemperature = async (change, context) => {
         const maxTemperature = documentSnapshot.exists
           ? Math.max(documentSnapshot.data().maxTemperature, tempout)
           : tempout;
-        const newDoc = { date: dateString, maxTemperature };
+        const newDoc = { date: today, maxTemperature };
         console.log('[Create] Set max temperature', `maxTemperatures/${dateString}`, newDoc);
 
         return admin

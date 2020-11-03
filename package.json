@@ -4,7 +4,6 @@
   "description": "WiFiLogger API for recording Davis Vantage Pro2 weather station events",
   "main": "src/index.js",
   "scripts": {
-    "start": "npm run poll",
     "poll": "node src/index.js",
     "serve": "node src/server.js",
     "deploy": "cd functions && npm run deploy",

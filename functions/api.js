@@ -1,18 +1,13 @@
 const admin = require('firebase-admin');
 
-admin.initializeApp({
-  credential: admin.credential.applicationDefault()
-});
-
-const db = admin.firestore();
-const observations = db.collection('observations');
-
-exports.addObservation = async function addObservation(data) {
-  try {
-    const date = new Date(data.utctime * 1000);
-    console.log('Adding observation', date);
-    return await observations.doc(date.toISOString()).create(data);
-  } catch (e) {
-    console.log(e);
+exports.addObservation = function(data) {
+  if (!data.utctime) {
+    throw new Error('utctime field is empty');
   }
+  const date = new Date(data.utctime * 1000);
+  return admin
+    .firestore()
+    .collection('observations')
+    .doc(date.toISOString())
+    .create(data);
 };

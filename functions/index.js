@@ -7,7 +7,7 @@ const { addDays, parse, format } = require('date-fns');
 const { Logging } = require('@google-cloud/logging');
 
 const { addObservation } = require('./api');
-const { addTestObservations } = require('./development');
+const { addTestObservations, calcMaxTemperatures } = require('./development');
 
 admin.initializeApp({
   credential: admin.credential.applicationDefault()
@@ -47,7 +47,8 @@ app.put('/', async (req, res) => {
 //.get('/migrate/:month', migrateMonth)
 //.get('/local-backup', localBackup);
 
-// exports.addTestObservations = addTestObservations;
+// exports.addTestObservations = functions.region('europe-west1').https.onRequest(addTestObservations);
+// exports.calcMaxTemperatures = functions.region('europe-west1').https.onRequest(calcMaxTemperatures);
 
 const recalculateMaxTemperature = async (change, context) => {
   const dateString = new Date(context.params.date).toISOString().slice(0, 10);

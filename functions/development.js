@@ -1,6 +1,4 @@
 const admin = require('firebase-admin');
-const functions = require('firebase-functions');
-const { addMonths } = require('date-fns');
 
 const { addObservation } = require('./api');
 

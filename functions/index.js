@@ -1,9 +1,8 @@
-const fs = require('fs');
 const express = require('express');
 const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const bodyParser = require('body-parser');
-const { addDays, parse, format } = require('date-fns');
+const { addDays } = require('date-fns');
 const { Logging } = require('@google-cloud/logging');
 
 const { addObservation } = require('./api');
@@ -27,10 +26,17 @@ const METADATA = {
 const logging = new Logging();
 const log = logging.log('wifilogger');
 
-const app = express();
-app.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
+const apiApp = express();
 
-app.put('/', async (req, res) => {
+const storeApp = express();
+apiApp.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
+
+// const app = express();
+// app.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
+
+// PUT observation to this endpoint and it will be stored in the Observations collection on FireStore
+// Note that authorization is currently disabled, so anyone can call this endpoint and write to the database
+storeApp.put('/storeObservation/', async (req, res) => {
   try {
     await addObservation(req.body);
     res.sendStatus(200);
@@ -44,12 +50,11 @@ app.put('/', async (req, res) => {
 });
 
 // Disabled for now because everyone can invoke these functions on prod
-//.get('/migrate/:month', migrateMonth)
-//.get('/local-backup', localBackup);
-
-// exports.addTestObservations = functions.region('europe-west1').https.onRequest(addTestObservations);
-// exports.calcMaxTemperatures = functions.region('europe-west1').https.onRequest(calcMaxTemperatures);
-
+// apiApp
+//  .get('/addTestObservations/', addTestObservations)
+//  .get('/calcMaxTemperatures/', calcMaxTemperatures);
+//  .get('/migrate/:month', migrateMonth)
+//  .get('/local-backup', localBackup);
 const recalculateMaxTemperature = async (change, context) => {
   const dateString = new Date(context.params.date).toISOString().slice(0, 10);
 
@@ -98,11 +103,14 @@ const recalculateMaxTemperature = async (change, context) => {
   }
 };
 
-// PUT observation to this endpoint and it will be stored in the Observations collection on FireStore
-// Note that authorization is currently disabled, so anyone can call this endpoint and write to the database
-exports.storeObservation = functions.region('europe-west1').https.onRequest(app);
+// All APIs
+exports.api = functions.region('europe-west1').https.onRequest(apiApp);
+
+// storeObservation app, to be moved into API app
+exports.storeObservation = functions.region('europe-west1').https.onRequest(storeApp);
 
 // Update the collection with max temperatures per day based on single observations
+// Trigger when observation is added to collection
 exports.updateMaxTemperature = functions
   .region('europe-west1')
   .firestore.document('observations/{date}')

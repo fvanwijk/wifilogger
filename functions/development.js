@@ -247,9 +247,12 @@ exports.migrateMonth = async (req, res) => {
  * Calculate max temperatures based on observations (batches per month)
  */
 exports.calcMaxTemperatures = async (req, res) => {
-  const month = req.query.month;
-  const from = new Date(`2020-${+month}-01`);
-  const until = addMonths(from, 1);
+  if (!req.query.from || !req.query.until) {
+    res.status(400).send('Please provide "from" and "until" query params (ISO date)');
+  }
+  const from = new Date(req.query.from);
+  const until = new Date(req.query.until);
+
   try {
     const observationsByDate = await admin
       .firestore()
@@ -286,6 +289,6 @@ exports.calcMaxTemperatures = async (req, res) => {
     res.send(`Set max temperatures for ${promises.length} days`);
   } catch (e) {
     console.log(e);
-    res.sendStatus(500);
+    res.status(500).send(e.message);
   }
 };

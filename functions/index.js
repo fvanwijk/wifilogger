@@ -29,14 +29,14 @@ const log = logging.log('wifilogger');
 const apiApp = express();
 
 const storeApp = express();
-apiApp.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
+storeApp.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
 
 // const app = express();
 // app.use(bodyParser.json({ type: () => true, reviver: (key, value) => (value === '---' ? null : value) }));
 
 // PUT observation to this endpoint and it will be stored in the Observations collection on FireStore
 // Note that authorization is currently disabled, so anyone can call this endpoint and write to the database
-storeApp.put('/storeObservation/', async (req, res) => {
+storeApp.put('/', async (req, res) => {
   try {
     await addObservation(req.body);
     res.sendStatus(200);

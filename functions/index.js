@@ -1,6 +1,6 @@
 const express = require('express');
 const admin = require('firebase-admin');
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const bodyParser = require('body-parser');
 const { addDays } = require('date-fns');
 const { Logging } = require('@google-cloud/logging');
